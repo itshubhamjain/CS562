@@ -3,42 +3,73 @@ import psycopg2
 
 class Manage:
     properties = []
-    configuration = '/Users/shubhamjain/CS562/project/db.properties'
+    configFile = '/Users/shubhamjain/CS562/project/db.properties'
     tableName = ''
     tableStruct = {}
-    config = {}
+    configuration = {}
     connections = []
 
     # Constructor
     def __init__(self):
         configPar = RawConfigParser()
-        configPar.read(self.configuration)
-        self.config = dict(configPar.items('DatabaseSection'))
+        configPar.read(self.configFile)
+        self.configuration = dict(configPar.items('DatabaseSection'))
         self.tableName = 'sales'
-        self.tableStruct = self.getStructDB(self.tableName,config)
+        self._setStructDB(self.tableName, self.configuration)
+        self.tableStruct = self.getStructDB()
+        conn = psycopg2.connect(database = self.configuration['database'],user = self.configuration['user'], password=self.configuration['password'],host= self.configuration['host'], port = self.configuration['port'])
+        self.connections.append(conn)
 
-    def getConnections(self):
-        return self.connections.pop(0)
-    def closeConnection(self,conn):
-        if conn:
-            conn.close()
+    def getStructDB(self):
+        return self.tableStruct
 
     #Retrive the database schema
-    def getStructDB(self,tableName, config):
+    def _setStructDB(self,tableName, configuration):
         struct = {}
         try:
-            conn = psycopg2.connect(database = config['database'],user = config['user'], password=config['password'],host= config['host'], port = config['port'])
-            cur = self.conn.cursor()
+            conn = psycopg2.connect(database = configuration['database'],user = configuration['user'], password=configuration['password'],host= configuration['host'], port = configuration['port'])
+            cur = conn.cursor()
             cur.execute("select column_name,data_type" + " from information_schema.columns"+ " where table_name='"+ tableName+"'")
             print('Retrieving information Schema of table'+tableName)
             rows = cur.fetchall()
             for row in rows:
                 struct[row[0]] = 'str' if row[1] is 'character varying' or 'character' else 'int'
-            self.connections.append(conn)
-            cur.close()
-            del rows
         except (Exception, psycopg2.Error) as error :
             print ("Error while fetching data from PostgreSQL", error)
+        finally:
+            cur.close()
+            conn.close()
+            del rows
+            print("PostgreSQL connection is closed")
+            self.tableStruct = struct
 
-        return struct
+    def setStructDB(self,tableStruct):
+        self.tableStruct = tableStruct
 
+    def getConnection(self):
+        return self.connections.pop(0)
+
+    def closeConnection(self,conn):
+        if conn:
+            conn.close()
+
+    def getTableName(self):
+        return self.tableName
+
+    def setTableName(self, tableName):
+        self.tableName = tableName
+
+    def getConfiguration(self):
+        return self.configuration
+
+    def getAllConnections(self):
+        return self.connections
+
+    def setAllConnections(self, connections):
+        self.connections = connections
+
+    def getConfigName(self):
+        return self.configFile
+
+    def setConfigName(self,configFile):
+        self.configFile = configFile
