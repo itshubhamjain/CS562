@@ -30,7 +30,7 @@ class Manage:
             conn = psycopg2.connect(database = configuration['database'],user = configuration['user'], password=configuration['password'],host= configuration['host'], port = configuration['port'])
             cur = conn.cursor()
             cur.execute("select column_name,data_type" + " from information_schema.columns"+ " where table_name='"+ tableName+"'")
-            print('Retrieving information Schema of table'+tableName)
+            print ('Retrieving information Schema of table'+tableName)
             rows = cur.fetchall()
             for row in rows:
                 struct[row[0]] = 'str' if row[1] is 'character varying' or 'character' else 'int'
@@ -40,7 +40,7 @@ class Manage:
             cur.close()
             conn.close()
             del rows
-            print("PostgreSQL connection is closed")
+            print ("PostgreSQL connection is closed")
             self.tableStruct = struct
 
     def setStructDB(self,tableStruct):
