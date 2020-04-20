@@ -22,7 +22,7 @@ class Manage:
     def closeConnection(self,conn):
         if conn:
             conn.close()
-            
+
     #Retrive the database schema
     def getStructDB(self,tableName, config):
         struct = {}
