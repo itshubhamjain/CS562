@@ -86,15 +86,27 @@ class FileInput:
             where = file.readline().strip()
 
         attr.emfAttributes(selectAttributes, n, groupAttributes, f_vect, select, having, where)
+        # print(attr.f_Vect)
         return attr
-        # print()
+
     def output(self, attributes, manage):
+
         file = open('/Users/shubhamjain/CS562/project/output/output.py', 'w+')
         final_write = finalWrite()
+        final_write.setFileName(file.name)
+        imports = ['from configparser import RawConfigParser','import psycopg2']
+        final_write.setImports(imports)
         final_write.setStructDB(manage.getStructDB())
-        final_write.printRelations()
-        print(final_write.returns[0])
+        final_write.setAttributes(attributes)
+        final_write.outputFile()
+        for write in final_write.returns:
+            file.write(write)
+        # print()
         return file.name
+
+
+
+
 fileInput = FileInput()
 fileInput.InputFile()
 
