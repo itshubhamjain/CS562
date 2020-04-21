@@ -1,4 +1,5 @@
 from project.util.EMFAttributes import EMFAttributes
+from project.util.finalWrite import finalWrite
 
 class FileInput:
     filePath = ''
@@ -89,7 +90,10 @@ class FileInput:
         # print()
     def output(self, attributes, manage):
         file = open('/Users/shubhamjain/CS562/project/output/output.py', 'w+')
-        
+        final_write = finalWrite()
+        final_write.setStructDB(manage.getStructDB())
+        final_write.printRelations()
+        print(final_write.returns[0])
         return file.name
 fileInput = FileInput()
 fileInput.InputFile()

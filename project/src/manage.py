@@ -32,8 +32,10 @@ class Manage:
             cur.execute("select column_name,data_type" + " from information_schema.columns"+ " where table_name='"+ tableName+"'")
             print ('Retrieving information Schema of table'+tableName)
             rows = cur.fetchall()
+            print(rows)
             for row in rows:
-                struct[row[0]] = 'str' if row[1] is 'character varying' or 'character' else 'int'
+                # print(row[1])
+                struct[row[0]] = 'int' if row[1].__contains__('integer')  else 'str'
         except (Exception, psycopg2.Error) as error :
             print ("Error while fetching data from PostgreSQL", error)
         finally:
