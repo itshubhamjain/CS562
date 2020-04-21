@@ -32,7 +32,7 @@ class Manage:
             cur.execute("select column_name,data_type" + " from information_schema.columns"+ " where table_name='"+ tableName+"'")
             print ('Retrieving information Schema of table'+tableName)
             rows = cur.fetchall()
-            print(rows)
+            # print(rows)
             for row in rows:
                 # print(row[1])
                 struct[row[0]] = 'int' if row[1].__contains__('integer')  else 'str'
