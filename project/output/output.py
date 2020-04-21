@@ -7,55 +7,45 @@ class Relation:
 		return self.cust
 	def setCust(self,cust):
 		self.cust = cust
-
 	prod = ''
 	def getProd(self):
 		return self.prod
 	def setProd(self,prod):
 		self.prod = prod
-
 	day =  0
 	def getDay(self):
 		return self.day
 	def setDay(self,day):
 		self.day = day
-
 	month =  0
 	def getMonth(self):
 		return self.month
 	def setMonth(self,month):
 		self.month = month
-
 	year =  0
 	def getYear(self):
 		return self.year
 	def setYear(self,year):
 		self.year = year
-
 	state = ''
 	def getState(self):
 		return self.state
 	def setState(self,state):
 		self.state = state
-
 	quant =  0
 	def getQuant(self):
 		return self.quant
 	def setQuant(self,quant):
 		self.quant = quant
-
+	def setAllVal(self, tuple):
+		self.cust,self.prod,self.day,self.month,self.year,self.state,self.quant= tuple
 
 class MF_Structure:
-	prod = ''
-	def getProd(self):
-		return self.prod
-	def setProd(self,prod):
-		self.prod = prod
-	month =  0
-	def getMonth(self):
-		return self.month
-	def setMonth(self,month):
-		self.month = month
+	cust = ''
+	def getCust(self):
+		return self.cust
+	def setCust(self,cust):
+		self.cust = cust
 
 	_1_count_quant =  None
 	def get_1_count_quant(self):
@@ -87,6 +77,12 @@ class MF_Structure:
 	def set_3_count_quant(self,_3_count_quant):
 		self._3_count_quant = _3_count_quant
 
+	_3_sum_quant =  None
+	def get_3_sum_quant(self):
+		return self._3_sum_quant
+	def set_3_sum_quant(self,_3_sum_quant):
+		self._3_sum_quant = _3_sum_quant
+
 
 def main():
 
@@ -97,5 +93,21 @@ def main():
 	conn = psycopg2.connect(database = configuration['database'],user = configuration['user'], password=configuration['password'],host= configuration['host'], port = configuration['port'])
 	cur = conn.cursor()
 	print('Database connected Successfully')
+	mfStructure = []
+	cur.execute("select * from sales")
+	rows = cur.fetchall()
+	for row in rows:
+		relation  = Relation()
+		relation.setAllVal(row)
+		addToMF = True
+		for eachMF in mfStructure:
+			if eachMF.getCust()==relation.getCust() :
+				addToMF = False
+				break
+		if addToMF:
+			addToMF = False
+			mf = MF_Structure()
+			mf.setCust(relation.getCust())
+			mfStructure.append(mf)
 if __name__ =='__main__':
 	main()

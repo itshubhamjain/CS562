@@ -1,5 +1,5 @@
-from project.util.EMFAttributes import EMFAttributes
-from project.util.finalWrite import finalWrite
+from project.Util.EMFAttributes import EMFAttributes
+from project.Util.finalWrite import finalWrite
 
 class FileInput:
     filePath = ''
@@ -98,7 +98,7 @@ class FileInput:
         final_write.setImports(imports)
         final_write.setStructDB(manage.getStructDB())
         final_write.setAttributes(attributes)
-        final_write.outputFile()
+        final_write.outputFile(manage)
         for write in final_write.returns:
             file.write(write)
         # print()

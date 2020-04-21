@@ -71,8 +71,14 @@ class finalWrite:
             # self.returns.append(temp)
             temp += '\tdef set'+vals[0][0].upper()+vals[0][1:]+'(self,'+vals[0]+'):\n'
             # self.returns.append(temp)
-            temp += '\t\tself.'+vals[0]+' = '+vals[0]+'\n\n'
-        temp+='\n'
+            temp += '\t\tself.'+vals[0]+' = '+vals[0]+'\n'
+        temp+=''
+        temp+='\tdef setAllVal(self, tuple):\n\t\t'
+        # temp+='):\n\t\t'
+        for vals in self.tableStruct.keys():
+            temp+='self.'+vals+','
+        temp= temp[:-1]
+        temp += '= tuple\n\n'
         self.returns.append(temp)
 
     def printMFStructure(self):
@@ -157,26 +163,64 @@ class finalWrite:
         print(vars)
         self.returns.append(temp)
 
-    def startMain(self):
+    def connectivity(self):
+        temp = ''
+        temp += '\tconfigFile = "/Users/shubhamjain/CS562/project/db.properties"\n'
+        temp += '\tconfigPar = RawConfigParser()\n'
+        temp += '\tconfigPar.read(configFile)\n'
+        temp += '\tconfiguration = dict(configPar.items("DatabaseSection"))\n'
+        temp += "\tconn = psycopg2.connect(database = configuration['database'],user = configuration['user'], password=configuration['password'],host= configuration['host'], port = configuration['port'])\n"
+        temp += "\tcur = conn.cursor()\n"
+        temp += "\tprint('Database connected Successfully')\n"
+        self.returns.append(temp)
+
+    def firstParse(self,manage):
+        relation = manage.getTableName()
+        temp = ''
+        temp += '\tmfStructure = []\n'
+        temp += '\tcur.execute("select * from ' + relation
+        temp += self.getAttributes().getWhere() + '")\n' if self.getAttributes().getWhere() else '")\n'
+        temp += '\trows = cur.fetchall()\n'
+        temp += '\tfor row in rows:\n'
+        temp += '\t\trelation  = Relation()\n'
+        temp += '\t\trelation.setAllVal(row)\n'
+        temp += '\t\taddToMF = True\n'
+        temp += '\t\tfor eachMF in mfStructure:\n'
+        groupingAtt = self.getAttributes().getGroupingAttr()
+        if groupingAtt:
+            temp += '\t\t\tif '
+        for groups in groupingAtt:
+            temp += 'eachMF.get' + groups[0].upper() + groups[1:] + '()==relation.get' + groups[0].upper() + groups[1:] + '() and '
+        if temp[-4:] == 'and ':
+            temp = temp[:-4] + ':\n'
+            temp += '\t\t\t\taddToMF = False\n\t\t\t\tbreak\n'
+        temp += '\t\tif addToMF:\n'
+        temp += '\t\t\taddToMF = False\n'
+        temp += '\t\t\tmf = MF_Structure()\n'
+
+        for group in groupingAtt:
+            temp+='\t\t\tmf.set'+group[0].upper()+group[1:]+'(relation.get'+group[0].upper()+group[1:]+'())\n'
+
+        temp +='\t\t\tmfStructure.append(mf)'
+        self.returns.append(temp)
+
+
+    def startMain(self,manage):
 
         # temp = 'class '+self.getFileName().split('/')[-1].split('.')[0]+' :'
         temp = 'def main():\n\n'
-        temp += '\tconfigFile = "/Users/shubhamjain/CS562/project/db.properties"\n'
-        temp +='\tconfigPar = RawConfigParser()\n'
-        temp +='\tconfigPar.read(configFile)\n'
-        temp +='\tconfiguration = dict(configPar.items("DatabaseSection"))\n'
-        temp +="\tconn = psycopg2.connect(database = configuration['database'],user = configuration['user'], password=configuration['password'],host= configuration['host'], port = configuration['port'])\n"
-        temp +="\tcur = conn.cursor()\n"
-        temp +="\tprint('Database connected Successfully')\n"
-        temp +="if __name__ =='__main__':\n\tmain()"
-
-
         self.returns.append(temp)
-    def outputFile(self):
+        self.connectivity()
+        self.firstParse(manage)
+        temp ="\nif __name__ =='__main__':\n\tmain()"
+        self.returns.append(temp)
+
+
+    def outputFile(self,manage):
         self.printImports()
         self.printRelations()
         self.printMFStructure()
-        self.startMain()
+        self.startMain(manage)
         return self.returns
 
 
