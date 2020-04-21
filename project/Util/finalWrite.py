@@ -52,6 +52,8 @@ class finalWrite:
     def printImports(self):
         temp = ''
         for val in self.getImports():
+            temp+=val+'\n'
+        self.returns.append(temp+'\n')
 
     def printRelations(self):
         temp = ''
@@ -72,8 +74,6 @@ class finalWrite:
             temp += '\t\tself.'+vals[0]+' = '+vals[0]+'\n\n'
         temp+='\n'
         self.returns.append(temp)
-
-
 
     def printMFStructure(self):
         temp = ''
@@ -161,7 +161,15 @@ class finalWrite:
 
         # temp = 'class '+self.getFileName().split('/')[-1].split('.')[0]+' :'
         temp = 'def main():\n\n'
+        temp += '\tconfigFile = "/Users/shubhamjain/CS562/project/db.properties"\n'
+        temp +='\tconfigPar = RawConfigParser()\n'
+        temp +='\tconfigPar.read(configFile)\n'
+        temp +='\tconfiguration = dict(configPar.items("DatabaseSection"))\n'
+        temp +="\tconn = psycopg2.connect(database = configuration['database'],user = configuration['user'], password=configuration['password'],host= configuration['host'], port = configuration['port'])\n"
+        temp +="\tcur = conn.cursor()\n"
+        temp +="\tprint('Database connected Successfully')\n"
         temp +="if __name__ =='__main__':\n\tmain()"
+
 
         self.returns.append(temp)
     def outputFile(self):

@@ -1,3 +1,6 @@
+from configparser import RawConfigParser
+import psycopg2
+
 class Relation:
 	cust = ''
 	def getCust(self):
@@ -87,5 +90,12 @@ class MF_Structure:
 
 def main():
 
+	configFile = "/Users/shubhamjain/CS562/project/db.properties"
+	configPar = RawConfigParser()
+	configPar.read(configFile)
+	configuration = dict(configPar.items("DatabaseSection"))
+	conn = psycopg2.connect(database = configuration['database'],user = configuration['user'], password=configuration['password'],host= configuration['host'], port = configuration['port'])
+	cur = conn.cursor()
+	print('Database connected Successfully')
 if __name__ =='__main__':
 	main()
