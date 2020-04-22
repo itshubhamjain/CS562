@@ -160,7 +160,8 @@ class finalWrite:
                 temp += '\t\tself.' + vals + ' = ' + vals + '\n\n'
                 vars.append(vals)
 
-        print(vars)
+        # print(vars)
+        self.setVars(vars)
         self.returns.append(temp)
 
     def connectivity(self):
@@ -200,10 +201,179 @@ class finalWrite:
 
         for group in groupingAtt:
             temp+='\t\t\tmf.set'+group[0].upper()+group[1:]+'(relation.get'+group[0].upper()+group[1:]+'())\n'
+        # print(self.getVars(), self.getAttributes().getGroupingAttr())
 
-        temp +='\t\t\tmfStructure.append(mf)'
+        for var in self.getVars():
+
+            if var.__contains__('_0'):
+                duplicate = var[:]
+                if duplicate.__contains__('avg'):
+                    group = var.replace('_0_avg_','')
+                    _count = duplicate.replace('avg_','count_')
+                    _sum  = duplicate.replace('avg_','sum_')
+                    temp += '\t\t\tmf.set'+_sum+"(relation.get"+group[0].upper()+group[1:]+"()+mf.get"+_sum+"())\n"
+        #             GADBAAD CHECK BAADME
+                    temp += "\t\t\tmf.set"+_count+"(mf.get"+_count+"()+1)\n"
+                else:
+                    group = var.replace('_0_sum_','').replace('_0_max_','').replace('_0_min_','').replace('_0_count_','')
+                    # duplicate = var[:]
+                    if var.__contains__('_sum_'):
+                        temp += '\t\t\tmf.set'+var+"(relation.get"+group[0].upper()+group[1:]+"()+mf.get"+var+"())\n"
+                    elif var.__contains__('_min_'):
+                        temp += '\t\t\tif mf.get'+var+'() > relation.get'+group[0].upper()+group[1:]+'():\n'
+                        temp += '\t\t\t\tmf.set'+var+'(relation.get'+group[0].upper()+group[1:]+'())\n'
+                    elif var.__contains__('_max_'):
+                        temp += '\t\t\tif mf.get' + var + '() < relation.get' + group[0].upper() + group[1:] + '():\n'
+                        temp += '\t\t\t\tmf.set' + var + '(relation.get' + group[0].upper() + group[1:] + '())\n'
+                    elif var.__contains__('_count_'):
+                        temp += "\t\t\tmf.set" + var + "(mf.get" + var + "()+1)\n"
+            elif var in self.getStructDB().keys():
+                # print("Hello World", var)
+                if var not in self.getAttributes().getGroupingAttr():
+                    temp+= '\t\t\tmf.set'+ var[0].upper() + var[1:]+'(relation.get'+ var[0].upper() + var[1:] +'())\n'
+            elif  not var.__contains__('_0'):
+                # print("Hello World", var)
+                if var.__contains__('_avg'):
+                    _count = var.replace('avg_', 'count_')
+                    _sum = var.replace('avg_', 'sum_')
+                    temp += '\t\t\tmf.set' + _sum + "(0)\n"
+                    temp += '\t\t\tmf.set' + _count + "(0.000001)\n"
+                elif var.__contains__('_count'):
+                    temp += '\t\t\tmf.set' + var + "(0.000001)\n"
+                else:
+                    temp += '\t\t\tmf.set' + var + "(0)\n"
+
+        temp +='\t\t\tmfStructure.append(mf)\n\n\n'
+        # print(self.vars)
         self.returns.append(temp)
 
+    def nextParse(self, manage):
+        relation = manage.getTableName()
+        temp = ""
+        numberGrouping = self.getAttributes().getNumberGrouping()
+        selectCond  = self.getAttributes().getSelectCondition()
+        tableStruct = self.getStructDB()
+        # print(selectCond)
+        # print(self.vars)
+        for idx in range(numberGrouping):
+            temp+= ''
+            temp += '\tcur.execute("select * from ' + relation
+            temp += self.getAttributes().getWhere() + '")\n' if self.getAttributes().getWhere() else '")\n'
+            temp += '\trows = cur.fetchall()\n'
+            temp += '\tfor row in rows:\n'
+            temp += '\t\trelation = Relation()\n'
+            temp += '\t\trelation.setAllVal(row)\n'
+            temp += '\t\tfor index, mfs in enumerate(mfStructure):\n'
+            temp += '\t\t\tif '
+            for condition in selectCond[idx]:
+                operator = ''
+                if condition.__contains__('='):
+                    operator = '='
+                elif condition.__contains__('<>'):
+                    operator = '<>'
+                elif condition.__contains__('>'):
+                    operator = '>'
+                elif condition.__contains__('<'):
+                    operator = '<'
+                leftOperand = condition.split(operator)[0].strip().split('_')[1].strip()
+                rightOperand = condition.split(operator)[1].strip()
+                # print(rightOperand)
+                if operator is '<>':
+                    operator = '!='
+                if operator  is '=':
+                    operator = '=='
+                    # print("Hello")
+                temp +='( relation.get'+leftOperand[0].upper() +leftOperand[1:]+'()'+operator
+
+                if rightOperand in self.vars:
+                    if operator in ('==','!='):
+                        temp+= 'mfs.get'+rightOperand[0].upper()+rightOperand[1:]+'())'
+                else:
+                    if ('_'+rightOperand).__contains__('avg_'):
+                        _count = ('_'+rightOperand).replace('avg_','count_')
+                        _sum = ('_' + rightOperand).replace('avg_', 'sum_')
+                        temp += '(mfs.get'+_sum+'() / mfs.get'+_count + '()))'
+                    else:
+                        # right =
+                        if '_'+rightOperand in self.vars:
+                            temp += 'mfs.get'+('_'+rightOperand)+'())'
+
+                        else:
+                            if '+' in rightOperand or '-' in rightOperand or '/' in rightOperand or '*' in rightOperand:
+
+                                if '+' in rightOperand:
+                                    LHS = rightOperand.split('+')[0].strip()
+                                    RHS = rightOperand.split('+')[1].strip()
+                                    if LHS in self.vars:
+                                        LHS = 'mfs.get'+LHS[0].upper()+LHS[1:]+'()'
+                                    elif RHS in self.vars:
+                                        RHS = 'mfs.get' + RHS[0].upper() + RHS[1:] + '()'
+                                    temp += LHS+' + '+RHS+')'
+                                if '-' in rightOperand:
+                                    # print(rightOperand.split('-'))
+                                    LHS = rightOperand.split('-')[0].strip()
+
+                                    RHS = rightOperand.split('-')[1].strip()
+
+                                    if LHS in self.vars:
+                                        LHS = 'mfs.get'+LHS[0].upper()+LHS[1:]+'()'
+                                    elif RHS in self.vars:
+                                        RHS = 'mfs.get' + RHS[0].upper() + RHS[1:] + '()'
+                                    temp += LHS+' - '+RHS+')'
+                                if '*' in rightOperand:
+                                    LHS = rightOperand.split('*')[0].strip()
+                                    RHS = rightOperand.split('*')[1].strip()
+                                    if LHS in self.vars:
+                                        LHS = 'mfs.get'+LHS[0].upper()+LHS[1:]+'()'
+                                    elif RHS in self.vars:
+                                        RHS = 'mfs.get' + RHS[0].upper() + RHS[1:] + '()'
+                                    temp += LHS+' * '+RHS+')'
+                                if '/' in rightOperand:
+                                    LHS = rightOperand.split('/')[0].strip()
+                                    RHS = rightOperand.split('/')[1].strip()
+                                    if LHS in self.vars:
+                                        LHS = 'mfs.get'+LHS[0].upper()+LHS[1:]+'()'
+                                    elif RHS in self.vars:
+                                        LRS = 'mfs.get' + RHS[0].upper() + RHS[1:] + '()'
+                                    temp += LHS+' / '+RHS+')'
+
+                            else:
+
+                                rightOperand = rightOperand.replace("'","\"")
+                                temp += rightOperand +"))"
+                temp += " and "
+            temp = temp[:-5]
+            temp +=':\n'
+            FVectors = self.getAttributes().getF_Vect()
+            for fvect in FVectors:
+                if (str(idx+1)+'_') in fvect:
+                    if 'avg' in fvect:
+                        _count = '_'+str(idx+1)+'_count_'+fvect.split("_")[2]
+                        _sum  = '_'+str(idx+1)+'_sum_'+fvect.split("_")[2]
+                        temp += '\t\t\t\tmfs.set'+_count+'(mfs.get'+_count+'()+1)\n'
+                        temp += '\t\t\t\tmfs.set'+_sum+'(mfs.get'+_sum+'() + relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'())\n'
+                    elif 'count' in fvect:
+                        _count = '_' + str(idx+1) + '_count_' + fvect.split("_")[2]
+                        temp += '\t\t\t\tmfs.set' + _count + '(mfs.get' + _count + '() + relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'())\n'
+                    elif 'sum' in fvect:
+                        _sum = '_' + str(idx+1) + '_sum_' + fvect.split("_")[2]
+                        temp += '\t\t\t\tmfs.set' + _sum + '(mfs.get' + _sum + '() + relation.get' + \
+                                fvect.split('_')[2][0].upper() + fvect.split('_')[2][1:] + '())\n'
+                    elif 'max' in fvect:
+                        _max = '_'+str(idx+1)+'_max_'+fvect.split('_')[2]
+                        temp += "\t\t\tif mfs.get"+_max+'() < relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'():\n'
+                        temp += '\t\t\t\tmfs.set'+_max+'(relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'())\n'
+
+                    elif 'min' in fvect:
+                        _min = '_'+str(idx+1)+'_min_'+fvect.split('_')[2]
+                        temp += "\t\t\tif mfs.get"+_min+'() > relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'():\n'
+                        temp += '\t\t\t\tmfs.set'+_min+'(relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'())\n'
+
+                    temp += '\t\t\t\tmfStructure[index]= mfs'
+            temp += '\n\n'
+
+        self.returns.append(temp)
+        # print(self.getAttributes().getF_Vect())
 
     def startMain(self,manage):
 
@@ -212,6 +382,7 @@ class finalWrite:
         self.returns.append(temp)
         self.connectivity()
         self.firstParse(manage)
+        self.nextParse(manage)
         temp ="\nif __name__ =='__main__':\n\tmain()"
         self.returns.append(temp)
 

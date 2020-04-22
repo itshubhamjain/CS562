@@ -18,18 +18,22 @@ class FileInput:
         return file
 
     def InputFile(self):
+        print("Input File")
         attr = EMFAttributes()
         file = self.readFile()
         selectAttributes = []
         if file.readline().lower().__contains__('select'):
             selectAttributes =''
             selectAttributes += file.readline()
-            selectAttributes = selectAttributes.strip().replace(',',' ').replace('  ',' ').split(' ')
+            selectAttributes = selectAttributes.strip().replace('  ',' ').split(',')
+
             for idx,selectAtt in enumerate(selectAttributes):
-                if not selectAtt.isalpha():
+                selectAttributes[idx] = selectAtt.replace(',', '').replace(' ', '')
+                if not selectAttributes[idx].isalpha():
                     selectAttributes[idx]  =  selectAtt.replace(',','').replace(' ','')
                     if not selectAttributes[idx].__contains__('_'):
                         print("You got trouble in select Attribute", selectAtt)
+
         n = 0
         if file.readline().lower().__contains__('variable'):
             n = int(file.readline().replace(' ',''))
@@ -55,22 +59,19 @@ class FileInput:
                     if not f_vect[idx].__contains__('_'):
                         print("You got trouble in f-vect Attribute", vect)
         select = []
+
         if file.readline().lower().__contains__('select'):
-            select = ''
             while True:
-                temp = file.readline()
+                conditions = []
+                temp = file.readline()[:-1]
                 if temp.lower().__contains__('having'):
                     break
-                temp = temp.replace('\n','and').strip()
-                select+=temp
-            # print(select)
-            select = select.replace('\n','and' ).split('and')
-
-            selectTemp = [val.strip() for val in select]
-            select = []
-            for val in selectTemp:
-                if val is not '':
-                    select.append(val)
+                temp = temp.split('and')
+                for cons in temp:
+                    conditions.append(cons.strip())
+                # print(conditions)
+                select.append(conditions)
+        # print(select)
         having = []
         if temp.lower().__contains__('having'):
 
@@ -87,6 +88,7 @@ class FileInput:
 
         attr.emfAttributes(selectAttributes, n, groupAttributes, f_vect, select, having, where)
         # print(attr.f_Vect)
+
         return attr
 
     def output(self, attributes, manage):
@@ -106,7 +108,7 @@ class FileInput:
 
 
 
-
-fileInput = FileInput()
-fileInput.InputFile()
+#
+# fileInput = FileInput()
+# fileInput.InputFile()
 

@@ -3,11 +3,11 @@
 from project.src.manage import Manage
 from project.src.FileInput import FileInput
 def main():
+    # print("Hello")
     manage = Manage()
-    # print(manage.tableStruct)
+    print(manage.tableStruct)
     fileInput =FileInput()
     attributes = fileInput.InputFile()
-    # print(attributes.havingCondition)
     file = fileInput.output(attributes,manage)
     print(file)
 
