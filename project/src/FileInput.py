@@ -7,7 +7,7 @@ class FileInput:
 
     def readFile(self):
         while True:
-            path = '/Users/shubhamjain/CS562/project/example'
+            path = '/Users/shubhamjain/CS562/project/examples/example5'
             # path += input('Input the File Name with its path\n')
             try:
                 file = open(path, "r")

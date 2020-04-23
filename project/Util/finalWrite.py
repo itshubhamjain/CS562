@@ -107,7 +107,7 @@ class finalWrite:
 
             if vals.__contains__('avg'):
                 vals  = vals.replace('avg','count')
-                temp += '\t' + vals + ' =  None\n'
+                temp += '\t' + vals + ' =  0\n'
                 # self.returns.append(temp)
                 # temp+='\t'+vals[0]+'\n'
                 temp += '\tdef get' + vals[0].upper() + vals[1:] + '(self):\n'
@@ -120,7 +120,7 @@ class finalWrite:
                 vars.append(vals)
 
                 vals = vals.replace('count', 'sum')
-                temp += '\t' + vals + ' =  None\n'
+                temp += '\t' + vals + ' =  0\n'
                 # self.returns.append(temp)
                 # temp+='\t'+vals[0]+'\n'
                 temp += '\tdef get' + vals[0].upper() + vals[1:] + '(self):\n'
@@ -277,17 +277,20 @@ class finalWrite:
                     operator = '<'
                 leftOperand = condition.split(operator)[0].strip().split('_')[1].strip()
                 rightOperand = condition.split(operator)[1].strip()
-                # print(rightOperand)
+                # print(condition)
+                # print(leftOperand,rightOperand)
                 if operator is '<>':
                     operator = '!='
                 if operator  is '=':
                     operator = '=='
                     # print("Hello")
                 temp +='( relation.get'+leftOperand[0].upper() +leftOperand[1:]+'()'+operator
-
+                # print('( relation.get'+leftOperand[0].upper() +leftOperand[1:]+'()'+operator)
+                # print(rightOperand in self.vars)
                 if rightOperand in self.vars:
-                    if operator in ('==','!='):
-                        temp+= 'mfs.get'+rightOperand[0].upper()+rightOperand[1:]+'())'
+                    # if operator in ('==','!='):
+                    temp+= 'mfs.get'+rightOperand[0].upper()+rightOperand[1:]+'())'
+
                 else:
                     if ('_'+rightOperand).__contains__('avg_'):
                         _count = ('_'+rightOperand).replace('avg_','count_')
@@ -340,7 +343,7 @@ class finalWrite:
                             else:
 
                                 rightOperand = rightOperand.replace("'","\"")
-                                temp += rightOperand +"))"
+                                temp += rightOperand +")"
                 temp += " and "
             temp = temp[:-5]
             temp +=':\n'
@@ -374,6 +377,197 @@ class finalWrite:
 
         self.returns.append(temp)
         # print(self.getAttributes().getF_Vect())
+    def removeConditionsMF(self):
+        temp = ''
+        having = self.getAttributes().getHavingCondition()
+        if having:
+            temp += '\tdelete = []\n'
+            temp += '\tfor idx,mfs in enumerate(mfStructure):\n\t\tif not('
+            for condition in having:
+                operator = ''
+                if condition.__contains__('='):
+                    operator = '='
+                elif condition.__contains__('<>'):
+                    operator = '<>'
+                elif condition.__contains__('>'):
+                    operator = '>'
+                elif condition.__contains__('<'):
+                    operator = '<'
+                leftOperand = condition.split(operator)[0].strip()
+                rightOperand = condition.split(operator)[1].strip()
+                # print(leftOperand,rightOperand)
+                if 'avg' in leftOperand:
+                    _sum = '_'+leftOperand.replace('avg','sum')
+                    _count = '_'+leftOperand.replace('avg','count')
+                    temp += '(mfs.get'+_sum+'()/mfs.get'+_count+'())'
+                else:
+                    if (''+leftOperand) in self.vars:
+                        temp += '(mfs.get'+'_'+leftOperand+'()'
+
+                temp += operator
+                duplicate = '_'+rightOperand
+                if rightOperand in self.vars:
+                    duplicate = rightOperand[0].upper()+rightOperand[1:]
+                    temp += '(mfs.get'+rightOperand[0].upper()+rightOperand[1:]+'()'
+
+                if 'avg' in rightOperand:
+                    _sum = '_'+rightOperand.replace('avg','sum')
+                    _count = '_'+rightOperand.replace('avg','count')
+                    print(_sum,_count)
+                    temp += '(mfs.get'+_sum+'()'+'/ mfs.get'+_count+'())'
+
+                if duplicate in  self.vars:
+                    temp += '(mfs.get'+duplicate+'()'
+
+                else:
+                    if '+' in rightOperand or '-' in rightOperand or '/' in rightOperand or '*' in rightOperand:
+                        # print(rightOperand)
+                        if '+' in rightOperand:
+
+                            LHS = rightOperand.split('+')[0].strip()
+                            RHS = rightOperand.split('+')[1].strip()
+                            if LHS in self.vars:
+                                LHS = 'mfs.get' + LHS[0].upper() + LHS[1:] + '()'
+                            elif RHS in self.vars:
+                                RHS = 'mfs.get' + RHS[0].upper() + RHS[1:] + '()'
+                            temp += LHS + ' + ' + RHS + ')'
+                        elif '-' in rightOperand:
+                            # print(rightOperand.split('-'))
+                            LHS = rightOperand.split('-')[0].strip()
+
+                            RHS = rightOperand.split('-')[1].strip()
+
+                            if LHS in self.vars:
+                                LHS = 'mfs.get' + LHS[0].upper() + LHS[1:] + '()'
+                            elif RHS in self.vars:
+                                RHS = 'mfs.get' + RHS[0].upper() + RHS[1:] + '()'
+                            temp += LHS + ' - ' + RHS + ')'
+                        elif '*' in rightOperand:
+                            LHS = rightOperand.split('*')[0].strip()
+                            RHS = rightOperand.split('*')[1].strip()
+                            if LHS in self.vars:
+                                LHS = 'mfs.get' + LHS[0].upper() + LHS[1:] + '()'
+                            elif RHS in self.vars:
+                                RHS = 'mfs.get' + RHS[0].upper() + RHS[1:] + '()'
+                            temp += LHS + ' * ' + RHS + ')'
+                        elif '/' in rightOperand:
+                            LHS = rightOperand.split('/')[0].strip()
+                            RHS = rightOperand.split('/')[1].strip()
+                            if LHS in self.vars:
+                                LHS = 'mfs.get' + LHS[0].upper() + LHS[1:] + '()'
+                            elif RHS in self.vars:
+                                LRS = 'mfs.get' + RHS[0].upper() + RHS[1:] + '()'
+                            temp += LHS + ' / ' + RHS + ')'
+                        # print(LHS,RHS)
+                temp += " and "
+            temp = temp[:-4]
+            temp += '):\n'
+            temp+= '\t\t\tdelete.append(mfs)\n'
+            temp += '\tfor mfs in delete:\n'
+            temp += '\t\tmfStructure.remove(mfs)\n'
+            # temp += '\t\t\tidx-=1\n'
+
+
+
+
+
+        # print(having)
+        self.returns.append(temp)
+
+        # print('========\t\t========\t\t===========\t\t===========\t\t===========')
+        # for mfs in mfStructure:
+        #     print('{0:8s}\t\t{1:8d}\t\t{2:11f}\t\t{3:11f}\t\t{4:11f}'.format(mfs.getCust(), mfs.getMonth(),
+        #                                                                      mfs.get_1_sum_quant() / mfs.get_1_count_quant(),
+        #                                                                      mfs.get_0_sum_quant() / mfs.get_0_count_quant(),
+        #                                                                      mfs.get_2_sum_quant() / mfs.get_2_count_quant()))
+
+    def resultMain(self):
+        temp = ''
+        selectAttr = self.getAttributes().getSelect()
+        print(selectAttr)
+        lengthString = 'print("'
+        endString =  ',.format('
+        ArrLength = []
+        for idx,attributes in enumerate(selectAttr):
+            length = len(attributes) if attributes not in self.getStructDB().keys() else 8
+            if '_' in attributes:
+                temp+= "\tprint('{0:"+str(length+1)+"s}'.format('"+attributes+"'),end = '   ')\n"
+            # elif
+                # lengthString += '{'+str(idx)+':'+str(length)+'s}\\t'
+                # endString += '"'+attributes+'", '
+            elif '+' in attributes or '-' in attributes or '*' in attributes or '/' in attributes:
+                temp+= '\tprint("{0:'+str(length)+1+'d}".format("'+attributes+'"), end = "   ")\n'
+            elif attributes in self.getStructDB().keys():
+                temp += "\tprint('{0:" + str(length + 1) + "s}'.format('" + attributes + "'),end = '   ')\n"
+            else:
+                temp += "\tprint('{0:" + str(length + 1) + "s}'.format('" + attributes + "'),end = '   ')\n"
+            ArrLength.append(length+1)
+        # print(lengthString+'"'+endString[1:-2]+'))')
+        temp += "\tprint()\n"
+        for idx in range(len(selectAttr)):
+            strTemp = '='
+            strTemp *= ArrLength[idx]
+            temp += '\tprint("'+strTemp+'",end = "   ")\n'
+        temp+='\tprint()\n'
+        temp += '\tfor idx, mfs in enumerate(mfStructure):\n'
+
+        for idx,attributes in enumerate(selectAttr):
+
+            if '+' in attributes or '-' in attributes or '*' in attributes or '/' in attributes:
+                temp += '\t\tprint("{0:'+str(ArrLength[idx])+'f}".format('
+                # ), end = "   ")\n
+                print(attributes)
+                operator = ''
+                if attributes.__contains__('+'):
+                    operator = '+'
+                elif attributes.__contains__('-'):
+                    operator = '-'
+                elif attributes.__contains__('/'):
+                    operator = '/'
+                elif attributes.__contains__('*'):
+                    operator = '*'
+                leftOperand = attributes.split(operator)[0].strip()
+                rightOperand = attributes.split(operator)[1].strip()
+
+                if 'avg' in leftOperand:
+                    _count = ('_' + leftOperand).replace('avg_', 'count_').strip()
+                    _sum = ('_' + leftOperand).replace('avg_', 'sum_').strip()
+                    temp += 'mfs.get' + _sum + '() / mfs.get' + _count + '() '
+                else:
+                    temp += 'mfs.get'+ '_'+leftOperand+'() '
+
+                temp += operator
+
+                if 'avg' in rightOperand:
+                    _count = ('_' + rightOperand).replace('avg_', 'count_').strip()
+                    _sum = ('_' + rightOperand).replace('avg_', 'sum_').strip()
+                    temp += 'mfs.get' + _sum + '() / mfs.get' + _count + '() '
+                else:
+                    temp += 'mfs.get' + '_' + rightOperand + '() '
+
+                temp += "), end = '   ')\n"
+                # temp += "), end = '   ')"
+            else:
+                if '_' in attributes:
+                    temp += '\t\tprint("{0:'+str(ArrLength[idx])+'f}".format('
+                    if 'avg' in attributes:
+                        _count = ('_' + attributes).replace('avg_', 'count_').strip()
+                        _sum = ('_' + attributes).replace('avg_', 'sum_').strip()
+                        temp += 'mfs.get' + _sum + '() / mfs.get' + _count + '()),end = "   ")\n '
+                    else:
+                        temp += 'mfs.get' + '_' + attributes + '()),end = "   ")\n '
+
+                else:
+                    accessIdentifier = 'd' if self.getStructDB()[attributes] is 'int' else 's'
+                    temp += '\t\tprint("{0:'+str(ArrLength[idx])+accessIdentifier+'}".format(mfs.get'+attributes[0].upper()+attributes[1:]+'()),end = "   ")\n'
+        temp += '\t\tprint()\n'
+
+
+        self.returns.append(temp)
+
+
+
+
 
     def startMain(self,manage):
 
@@ -383,6 +577,8 @@ class finalWrite:
         self.connectivity()
         self.firstParse(manage)
         self.nextParse(manage)
+        self.removeConditionsMF()
+        self.resultMain()
         temp ="\nif __name__ =='__main__':\n\tmain()"
         self.returns.append(temp)
 
