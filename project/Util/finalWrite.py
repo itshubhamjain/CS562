@@ -3,6 +3,8 @@ class finalWrite:
     fileName  = ''
     attributes = None
     imports = []
+    returnTable = []
+    returnMFStruct = []
     returns = []
     vars = []
     package = ''
@@ -79,7 +81,7 @@ class finalWrite:
             temp+='self.'+vals+','
         temp= temp[:-1]
         temp += '= tuple\n\n'
-        self.returns.append(temp)
+        self.returnTable.append(temp)
 
     def printMFStructure(self):
         temp = ''
@@ -162,7 +164,7 @@ class finalWrite:
 
         # print(vars)
         self.setVars(vars)
-        self.returns.append(temp)
+        self.returnMFStruct.append(temp)
 
     def connectivity(self):
         temp = ''
@@ -253,6 +255,7 @@ class finalWrite:
         numberGrouping = self.getAttributes().getNumberGrouping()
         selectCond  = self.getAttributes().getSelectCondition()
         tableStruct = self.getStructDB()
+        selectJoint = self.getAttributes().getSelectJoint()
         # print(selectCond)
         # print(self.vars)
         for idx in range(numberGrouping):
@@ -265,7 +268,10 @@ class finalWrite:
             temp += '\t\trelation.setAllVal(row)\n'
             temp += '\t\tfor index, mfs in enumerate(mfStructure):\n'
             temp += '\t\t\tif '
-            for condition in selectCond[idx]:
+            selectionJoint = []
+            # print(selectCond)
+            for index, condition in enumerate(selectCond[idx]):
+
                 operator = ''
                 if condition.__contains__('='):
                     operator = '='
@@ -344,35 +350,44 @@ class finalWrite:
 
                                 rightOperand = rightOperand.replace("'","\"")
                                 temp += rightOperand +")"
-                temp += " and "
-            temp = temp[:-5]
+                if selectJoint[idx]:
+
+                    temp += selectJoint[idx].pop(0)
+            # temp = temp[:-5]
             temp +=':\n'
+
+
+
             FVectors = self.getAttributes().getF_Vect()
+            fvectStatements = ''
             for fvect in FVectors:
                 if (str(idx+1)+'_') in fvect:
                     if 'avg' in fvect:
                         _count = '_'+str(idx+1)+'_count_'+fvect.split("_")[2]
                         _sum  = '_'+str(idx+1)+'_sum_'+fvect.split("_")[2]
-                        temp += '\t\t\t\tmfs.set'+_count+'(mfs.get'+_count+'()+1)\n'
-                        temp += '\t\t\t\tmfs.set'+_sum+'(mfs.get'+_sum+'() + relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'())\n'
+
+                        fvectStatements += '\t\t\t\tmfs.set'+_count+'(mfs.get'+_count+'()+1)\n' if not fvectStatements.__contains__('\t\t\t\tmfs.set'+_count+'(mfs.get'+_count+'()+1)\n') else ''
+                        fvectStatements += '\t\t\t\tmfs.set'+_sum+'(mfs.get'+_sum+'() + relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'())\n' if not fvectStatements.__contains__('\t\t\t\tmfs.set'+_sum+'(mfs.get'+_sum+'() + relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'())\n') else ''
                     elif 'count' in fvect:
                         _count = '_' + str(idx+1) + '_count_' + fvect.split("_")[2]
-                        temp += '\t\t\t\tmfs.set' + _count + '(mfs.get' + _count + '() + relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'())\n'
+
+                        fvectStatements += '\t\t\t\tmfs.set' + _count + '(mfs.get' + _count + '() + 1)\n'
                     elif 'sum' in fvect:
                         _sum = '_' + str(idx+1) + '_sum_' + fvect.split("_")[2]
-                        temp += '\t\t\t\tmfs.set' + _sum + '(mfs.get' + _sum + '() + relation.get' + \
+                        fvectStatements += '\t\t\t\tmfs.set' + _sum + '(mfs.get' + _sum + '() + relation.get' + \
                                 fvect.split('_')[2][0].upper() + fvect.split('_')[2][1:] + '())\n'
                     elif 'max' in fvect:
                         _max = '_'+str(idx+1)+'_max_'+fvect.split('_')[2]
-                        temp += "\t\t\tif mfs.get"+_max+'() < relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'():\n'
-                        temp += '\t\t\t\tmfs.set'+_max+'(relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'())\n'
+                        fvectStatements += "\t\t\tif mfs.get"+_max+'() < relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'():\n'
+                        fvectStatements += '\t\t\t\tmfs.set'+_max+'(relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'())\n'
 
                     elif 'min' in fvect:
                         _min = '_'+str(idx+1)+'_min_'+fvect.split('_')[2]
-                        temp += "\t\t\tif mfs.get"+_min+'() > relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'():\n'
-                        temp += '\t\t\t\tmfs.set'+_min+'(relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'())\n'
+                        fvectStatements += "\t\t\tif mfs.get"+_min+'() > relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'():\n'
+                        fvectStatements += '\t\t\t\tmfs.set'+_min+'(relation.get'+fvect.split('_')[2][0].upper()+fvect.split('_')[2][1:]+'())\n'
 
-                    temp += '\t\t\t\tmfStructure[index]= mfs'
+                    fvectStatements += '\t\t\t\tmfStructure[index]= mfs\n'
+            temp +=fvectStatements
             temp += '\n\n'
 
         self.returns.append(temp)
@@ -383,7 +398,9 @@ class finalWrite:
         if having:
             temp += '\tdelete = []\n'
             temp += '\tfor idx,mfs in enumerate(mfStructure):\n\t\tif not('
-            for condition in having:
+            # print(having)
+            for idx, condition in enumerate(having):
+
                 operator = ''
                 if condition.__contains__('='):
                     operator = '='
@@ -395,17 +412,18 @@ class finalWrite:
                     operator = '<'
                 leftOperand = condition.split(operator)[0].strip()
                 rightOperand = condition.split(operator)[1].strip()
-                # print(leftOperand,rightOperand)
+
                 if 'avg' in leftOperand:
                     _sum = '_'+leftOperand.replace('avg','sum')
                     _count = '_'+leftOperand.replace('avg','count')
                     temp += '(mfs.get'+_sum+'()/mfs.get'+_count+'())'
                 else:
-                    if (''+leftOperand) in self.vars:
-                        temp += '(mfs.get'+'_'+leftOperand+'()'
-
+                    if ('_'+leftOperand) in self.vars:
+                        temp += '(mfs.get'+'_'+leftOperand+'())'
+                        # print('(mfs.get'+'_'+leftOperand+'())')
                 temp += operator
                 duplicate = '_'+rightOperand
+                # print(duplicate in self.vars)
                 if rightOperand in self.vars:
                     duplicate = rightOperand[0].upper()+rightOperand[1:]
                     temp += '(mfs.get'+rightOperand[0].upper()+rightOperand[1:]+'()'
@@ -413,15 +431,16 @@ class finalWrite:
                 if 'avg' in rightOperand:
                     _sum = '_'+rightOperand.replace('avg','sum')
                     _count = '_'+rightOperand.replace('avg','count')
-                    print(_sum,_count)
+                    # print(_sum,_count)
                     temp += '(mfs.get'+_sum+'()'+'/ mfs.get'+_count+'())'
 
                 if duplicate in  self.vars:
-                    temp += '(mfs.get'+duplicate+'()'
+                    temp += '(mfs.get'+duplicate+'())'
 
                 else:
+
                     if '+' in rightOperand or '-' in rightOperand or '/' in rightOperand or '*' in rightOperand:
-                        # print(rightOperand)
+
                         if '+' in rightOperand:
 
                             LHS = rightOperand.split('+')[0].strip()
@@ -430,7 +449,7 @@ class finalWrite:
                                 LHS = 'mfs.get' + LHS[0].upper() + LHS[1:] + '()'
                             elif RHS in self.vars:
                                 RHS = 'mfs.get' + RHS[0].upper() + RHS[1:] + '()'
-                            temp += LHS + ' + ' + RHS + ')'
+                            temp += '('+LHS + ' + ' + RHS + ')'
                         elif '-' in rightOperand:
                             # print(rightOperand.split('-'))
                             LHS = rightOperand.split('-')[0].strip()
@@ -441,7 +460,7 @@ class finalWrite:
                                 LHS = 'mfs.get' + LHS[0].upper() + LHS[1:] + '()'
                             elif RHS in self.vars:
                                 RHS = 'mfs.get' + RHS[0].upper() + RHS[1:] + '()'
-                            temp += LHS + ' - ' + RHS + ')'
+                            temp += '('+LHS + ' - ' + RHS + ')'
                         elif '*' in rightOperand:
                             LHS = rightOperand.split('*')[0].strip()
                             RHS = rightOperand.split('*')[1].strip()
@@ -449,7 +468,10 @@ class finalWrite:
                                 LHS = 'mfs.get' + LHS[0].upper() + LHS[1:] + '()'
                             elif RHS in self.vars:
                                 RHS = 'mfs.get' + RHS[0].upper() + RHS[1:] + '()'
-                            temp += LHS + ' * ' + RHS + ')'
+                            elif '_'+RHS in self.vars:
+                                RHS = 'mfs.get_' +RHS + '()'
+                            temp += '('+LHS + ' * ' + RHS + ')'
+                            print( RHS)
                         elif '/' in rightOperand:
                             LHS = rightOperand.split('/')[0].strip()
                             RHS = rightOperand.split('/')[1].strip()
@@ -457,10 +479,11 @@ class finalWrite:
                                 LHS = 'mfs.get' + LHS[0].upper() + LHS[1:] + '()'
                             elif RHS in self.vars:
                                 LRS = 'mfs.get' + RHS[0].upper() + RHS[1:] + '()'
-                            temp += LHS + ' / ' + RHS + ')'
+                            temp += '('+LHS + ' / ' + RHS + ')'
                         # print(LHS,RHS)
-                temp += " and "
-            temp = temp[:-4]
+                if self.getAttributes().getHavingJoint():
+                    temp += self.getAttributes().getHavingJoint().pop(0)
+
             temp += '):\n'
             temp+= '\t\t\tdelete.append(mfs)\n'
             temp += '\tfor mfs in delete:\n'
@@ -484,7 +507,7 @@ class finalWrite:
     def resultMain(self):
         temp = ''
         selectAttr = self.getAttributes().getSelect()
-        print(selectAttr)
+        # print(selectAttr)
         lengthString = 'print("'
         endString =  ',.format('
         ArrLength = []
@@ -585,8 +608,8 @@ class finalWrite:
 
     def outputFile(self,manage):
         self.printImports()
-        self.printRelations()
-        self.printMFStructure()
+        # self.printRelations()
+        # self.printMFStructure()
         self.startMain(manage)
         return self.returns
 

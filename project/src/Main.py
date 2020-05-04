@@ -8,8 +8,9 @@ def main():
     print(manage.tableStruct)
     fileInput =FileInput()
     attributes = fileInput.InputFile()
+
     file = fileInput.output(attributes,manage)
-    print(file)
+    # print(file)
 
 # select = []
 #     numberGroupingVar = None

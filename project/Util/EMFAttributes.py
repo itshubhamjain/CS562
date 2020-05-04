@@ -6,6 +6,8 @@ class EMFAttributes:
     selectCondition = []
     havingCondition = []
     where = ''
+    havingJoint = []
+    selectJoint = []
 
     def getSelect(self):
         return self.select
@@ -58,6 +60,18 @@ class EMFAttributes:
         self.selectCondition = selectCondition
         self.havingCondition = havingCondition
         self.where = where
+
+    def getHavingJoint(self):
+        return self.havingJoint
+
+    def setHavingJoint(self,havingJoint):
+        self.havingJoint = havingJoint
+
+    def getSelectJoint(self):
+        return self.selectJoint
+
+    def setSelectJoint(self,selectJoint):
+        self.selectJoint = selectJoint
 
 
 
